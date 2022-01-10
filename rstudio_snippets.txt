@@ -1,0 +1,197 @@
+snippet psyfun
+	# quickpsy to estimate psychometric thresholds
+	${1:psy_fits} = quickpsy(${2:df}, x = ${3:x}, k = ${4:resp}, prob = .5, 
+					grouping = .(${5:sub}, ${6:cond}), fun = logistic_fun, bootstrap = 'none') 
+	${1:psy_fits}\$thresholds
+	plot(${1:psy_fits}, color = ${6:cond})
+snippet rmanova
+	#rm-ANOVA via ezANOVA
+	${1:aov_res} = ezANOVA(data = ${2:df}, dv = ${3:dv}, 
+							wid = ${4:subj}, within = .(${5:cond}))
+	${1:aov_res}\$ANOVA
+snippet bfanova
+	#Bayes ANOVA (note: need to run on mean data table to get correct BF values)
+	# In addition, you need to factor all ivs, include subjects
+	${1:data}[,${2:sub}] = as.factor(${1:data}[,${2:sub})] # do similar for other factors
+	${3:bf} = anovaBF(${4:dv} ~ ${5:factor1}*${6:factor2} + ${2:subj}, 
+				data = as.data.frame(${1:data}), whichRandom = "${2:subj}")
+	bayesfactor_inclusion(bf)
+snippet pairttest
+	#follow-up paired t-test with correction
+	${1:mdata} %>% group_by(${2:cond}) %>% t_test(${3:dv} ~ ${4:iv}, paired = TRUE, p.adjust.method = '${5:Bonferroni}') # adj: 'holm', 'fdr','hochberg' 
+snippet msd
+	#calculate mean and SD, SE
+	${1:mData}=${2:raw} %>% 
+				group_by(${3:sub}, ${4:cond}) %>%
+				summarise(sd_${5:dv} = sd(${5:dv}), n = n(), 
+				se = sd_${5:dv}/sqrt(n), m_${5:dv} = mean(${5:dv}))
+	#visualize mean data
+	${1:mData} %>% group_by(${4:cond}) %>%
+				summarise(se = sd(m_${5:dv})/sqrt(n()), mm_${5:dv} = mean(m_${5:dv})) %>%
+				ggplot(aes(x = ${4:cond}, y = mm_${5:dv}, ymin = mm_${5:dv} - se, ymax = mm_${5:dv} + se)) + 
+						geom_point() + geom_errorbar(width = 0.5) + geom_line() + 
+						xlab('${6:xlabel}') + ylab('Mean ${7:ylabel}') + 
+						theme_classic()
+snippet rta
+	#calculate accuracies based on 'correct' column
+	${1:macc} = ${2:raw} %>% group_by(${3:subj},${4:cond}) %>%
+							summarise(accuracy = mean(${5:correct}))
+	#visualize accuracy
+	${1:macc} %>% group_by(${4:cond}) %>% 
+			summarise(se = sd(accuracy)/sqrt(n()), accuracy = mean(accuracy)) %>%
+			ggplot(aes(x = ${4:cond}, y = accuracy, ymin = accuracy - se, ymax = accuracy+se)) +
+					geom_point() + geom_errorbar(width = 0.5) + geom_line() + 
+					xlab('${6:xlabel}') + ylab('Mean Accuracy') + 
+					theme_classic()
+
+snippet mergeCSV
+	# merge raw individual csv files together
+	# it assumes all csv files stored in one subfold
+	mergeCSV <- function(filename){
+		dat = read.csv(filename)
+		fs = strsplit(filename,'/')
+		dat\$subj = substr(tail(fs[[1]],1),1,${1:7}) # you can use other methods
+		#dat\$subj = gsub('.csv','',tail(fs[[1]],1)) # get csv name as subj
+		return(dat)
+	}
+	dataPath = paste0(getwd(),'/${1:data}/')
+	files = list.files(dataPath, pattern = '*.csv', full.names = TRUE)
+	${2:raw} = map_df(files, mergeCSV)
+	
+snippet killtw
+	#kill the twin process for SAT in RTs
+	kill_the_twin <- function(df) {
+		trl_err = df %>% filter(${1:Correct} == 0) %>% arrange(${2:RT})
+		trl_cor = df %>% filter(${1:Correct} == 1) %>% arrange(${2:RT})
+	
+		for (i in 1:nrow(trl_err)){
+			err_rt = trl_err[i,'${2:RT}'] #select one RT from the error trials
+			idx = max(1, which.min(trl_cor['${2:RT}']<=err_rt)-1) # fine the match one
+			trl_cor = trl_cor[-idx, ] # kill the twin
+		}
+		# return the correct trials
+		return(trl_cor) 
+	}
+
+snippet libs
+	#import basic libraries
+	library(tidyverse)
+	library(cowplot)
+	library(rstatix)
+	library(ez)
+	library(BayesFactor)
+	library(bayestestR)
+	library(quickpsy)
+	
+snippet lib
+	library(${1:package})
+
+snippet req
+	require(${1:package})
+
+snippet src
+	source("${1:file.R}")
+
+snippet ret
+	return(${1:code})
+
+snippet mat
+	matrix(${1:data}, nrow = ${2:rows}, ncol = ${3:cols})
+
+snippet sg
+	setGeneric("${1:generic}", function(${2:x, ...}) {
+		standardGeneric("${1:generic}")
+	})
+
+snippet sm
+	setMethod("${1:generic}", ${2:class}, function(${2:x, ...}) {
+		${0}
+	})
+
+snippet sc
+	setClass("${1:Class}", slots = c(${2:name = "type"}))
+
+snippet if
+	if (${1:condition}) {
+		${0}
+	}
+
+snippet el
+	else {
+		${0}
+	}
+
+snippet ei
+	else if (${1:condition}) {
+		${0}
+	}
+
+snippet fun
+	${1:name} <- function(${2:variables}) {
+		${0}
+	}
+
+snippet for
+	for (${1:variable} in ${2:vector}) {
+		${0}
+	}
+
+snippet while
+	while (${1:condition}) {
+		${0}
+	}
+
+snippet switch
+	switch (${1:object},
+		${2:case} = ${3:action}
+	)
+
+snippet apply
+	apply(${1:array}, ${2:margin}, ${3:...})
+
+snippet lapply
+	lapply(${1:list}, ${2:function})
+
+snippet sapply
+	sapply(${1:list}, ${2:function})
+
+snippet mapply
+	mapply(${1:function}, ${2:...})
+
+snippet tapply
+	tapply(${1:vector}, ${2:index}, ${3:function})
+
+snippet vapply
+	vapply(${1:list}, ${2:function}, FUN.VALUE = ${3:type}, ${4:...})
+
+snippet rapply
+	rapply(${1:list}, ${2:function})
+
+snippet ts
+	`r paste("#", date(), "------------------------------\n")`
+
+snippet shinyapp
+	library(shiny)
+	
+	ui <- fluidPage(
+	  ${0}
+	)
+	
+	server <- function(input, output, session) {
+	  
+	}
+	
+	shinyApp(ui, server)
+
+snippet shinymod
+	${1:name}_UI <- function(id) {
+	  ns <- NS(id)
+	  tagList(
+		${0}
+	  )
+	}
+	
+	${1:name} <- function(input, output, session) {
+	  
+	}
+

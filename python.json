@@ -1,0 +1,127 @@
+{
+	// some common data analysis snippets for python here. Each snippet is defined under a snippet name and has a prefix, body and description
+	// last modified by Strongway, 30.12.2021/ 09.01.2022 /10.01.2022
+
+	"psychometric functions":{
+		"prefix":"psyfun",
+		"body":[
+			"#using psignifit to estimate psychometric function",
+			"# 1. fitting options (https://github.com/wichmann-lab/python-psignifit/tree/master/psignifit/demos)",
+			"options = dict(); # initialization",
+			"options['sigmoidName'] = '${1|logistic,norm,logn,weibull|}' ",
+			"options['expType'] = '${2|YesNo,2AFC,equalAsymptote,nAFC|}' ", 
+			"#2. get fitting conditions",
+			"Subs = ${3:mData}.${4:subj}.unique()",
+			"Conds = ${3:mData}.${5:cond}.unique()",
+			"thre = [] #store threshold",
+			"fits = [] #store fits",
+			"for sub in Subs:",
+			"	sub_thre = [] #local individual thresholds",
+			"	sub_fits = [] # individual fits",
+			"	for cond in Conds:",
+			"		curData = mResp.query(f'${4:subj} == {sub} & ${5:cond} == {cond}') #pay attention to string or int.",
+			"		res = ps.psignifit(curData[['${6:x}','${7:resp_num}','${8:total_num}']], options)",
+			"		sub_thre.append(res['Fit'][0]) # threshold",
+			"		sub_fits.append(res)",
+			"	thre.append(sub_thre)",
+			"	fits.append(sub_fits)",
+			"thresholds =  pd.DataFrame(thre, index = Subs, columns = Conds)  #for storing thresholds"
+		],
+		"description": "Fitting psychometric functions via psignifit"
+	},
+	"Plot psychometric curve":{
+		"prefix":"psyplot",
+		"body": [
+			"ax = plt.gca()",
+			"a1 = ps.psigniplot.plotPsych(${1:fit1}, axisHandle = ax, showImediate = False)",
+			"ps.psigniplot.plotPsych(${2:fit2}, axisHandle = ax,",
+			"						dataColor = [170./255, 105./255,0], #change color here",
+			"						xLabel = '${3:xlabel}',",
+			"						yLabel = '${4:ylabel}')"
+		],
+		"description": "Plot multiple psychometric functions together"
+	},
+	"import package": {
+        "prefix": "imp",
+        "body": [
+            "# %%",
+            "import numpy as np",
+            "import pandas as pd",
+            "import matplotlib.pyplot as plt",
+            "import seaborn as sns",
+			"import pingouin as pg",
+			"import psignifit as ps",
+			"pd.set_option('display.precision', 3)",
+            "%matplotlib inline",
+        ],
+        "description": "Import necessary packages"
+    },
+	"read csv":{
+		"prefix":"csv",
+		"body":[
+			"# read raw csc data",
+            "${2:raw} = pd.read_csv(\"${1:csvfile.csv}\")",
+			"${2:raw}.head(5)"
+		],
+		"description": "Import the raw csv data"
+	},
+	"RT accuracy":{
+		"prefix":"rta",
+		"body":[
+			"macc = ${1:raw}.groupby(['${2:subj}', '${3:cond}'])\\",
+			".agg({'${4:correct}':'mean'}).rename(columns={'${4:correct}':'accuracy'}).reset_index()",
+			"print(macc.head())",
+			"sns.catplot(x = '${3:cond}', y = 'accuracy',  kind = 'point', data = macc)"
+		],
+		"description": "RT accuracy analysis"
+	},
+	"mean RTs":{
+		"prefix":"rtm",
+		"body":[
+			"mrt=${1:raw}.query('${2:rt}>0.15 & ${2:rt}<4 & ${3:correct}==1')\\",
+			".groupby(['${4:subj}', '${5:cond}']).agg({'${2:rt}':'mean'}).reset_index()",
+			"print(mrt.head())",
+			"sns.catplot(x = '${5:cond}', y = 'rt',  kind = 'point', data = mrt)"
+		],
+		"description":"calculate Mean RTs"
+	},
+	"mean data":{
+		"prefix":"msd",
+		"body":[
+			"${1:mData}=${2:raw}.groupby(['${4:subj}', '${5:cond}']).agg({'${6:mCol}':['mean','std'] })",
+			"${1:mData}.columns = ${1:mData}.columns.map('_'.join) #combine multi-level columns",
+			"${1:mData} = ${1:mData}.reset_index()",
+			"${1:mData}.head()"
+		],
+		"description":"calculate Mean data"
+	},
+	"pg rmANOVA":{
+		"prefix": ["pganova","pa"],
+		"body":[
+			"pg.rm_anova(data = ${1:mdata}, dv = '${2:dv}', within = ['${3:factor}'],subject = '${4:sub}', detailed = True)"
+		],
+		"description": "rmANOVA from pingouin"
+	},
+	"pg pair-wise":{
+		"prefix": ["pgpair","pp"],
+		"body": [
+			"pg.pairwise_ttests(data = ${1:mdata}, dv = '${2:dv}', within = ['${3:factor}'],subject = '${4:sub}', padjust = '${5|bonf,holm,fdr_bh|}')"
+		],
+		"description": "pg post-hoc pair-wise tests"
+	},
+	"shift column":{
+		"prefix":"pretrial",
+		"body": [
+			"${1:raw_n} = ${2:raw}.assign(preTrial = lambda df: df.groupby('${3:sub}').${4:cond}.shift(1))",
+			"${1:raw_n}.head()"
+		],
+		"description": "Shift one trial for the pretrial condition"
+	},
+	"Pivot wide":{
+		"prefix": ["pivotwide","pw"],
+		"body":[
+			"${1:df_w} = ${2:df}.pivot(index=['${3:sub}','${4:cond}'], columns = '${5:fromColumn}', values = '${6:valueColumn}').reset_index()",
+			"${1:df_w}.head()"
+		]
+	}
+}
