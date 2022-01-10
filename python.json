@@ -9,7 +9,7 @@
 			"# 1. fitting options (https://github.com/wichmann-lab/python-psignifit/tree/master/psignifit/demos)",
 			"options = dict(); # initialization",
 			"options['sigmoidName'] = '${1|logistic,norm,logn,weibull|}' ",
-			"options['expType'] = '${2|YesNo,2AFC,equalAsymptote,nAFC|}' ", 
+			"options['expType'] = '${2|YesNo,2AFC,equalAsymptote,nAFC|}' ",
 			"#2. get fitting conditions",
 			"Subs = ${3:mData}.${4:subj}.unique()",
 			"Conds = ${3:mData}.${5:cond}.unique()",
@@ -81,7 +81,7 @@
 			"mrt=${1:raw}.query('${2:rt}>0.15 & ${2:rt}<4 & ${3:correct}==1')\\",
 			".groupby(['${4:subj}', '${5:cond}']).agg({'${2:rt}':'mean'}).reset_index()",
 			"print(mrt.head())",
-			"sns.catplot(x = '${5:cond}', y = 'rt',  kind = 'point', data = mrt)"
+			"sns.catplot(x = '${5:cond}', y = '${2:rt}',  kind = 'point', data = mrt)"
 		],
 		"description":"calculate Mean RTs"
 	},
